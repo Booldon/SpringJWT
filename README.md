@@ -24,6 +24,7 @@ username, password 기입 후 login -> /login post 접근, 로컬 스토리지�
 admin -> /admin get접근, 만약 토큰을 응답으로 받았다면, 로컬 스토리지에 저장
 logout -> /logout get접근, 로컬 스토리지 삭제
 
-///////////////////////
 cd node-demo/myapp
+
+
 node server.js
