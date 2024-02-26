@@ -7,6 +7,9 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.boot.web.server.Cookie;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseCookie;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -67,6 +70,7 @@ public class LoginFilter extends UsernamePasswordAuthenticationFilter {
         Iterator<? extends GrantedAuthority> iterator = authorities.iterator();
         GrantedAuthority auth = iterator.next();
 
+        System.out.println("auth.getAuthority() : "+ auth.getAuthority());
         String role = auth.getAuthority();
 
         String randomkey = SecureRandomStringGenerator.generateRandomString(32);
@@ -75,10 +79,20 @@ public class LoginFilter extends UsernamePasswordAuthenticationFilter {
         //refreshToken 생성
         refreshTokenService.createRefreshToken(username, role, randomkey);
         //jwt 생성
-        String token = jwtUtil.createJwt(username, role, randomkey, 15*1000L); //jwt 유지시간
+        String token = jwtUtil.createJwt(username, role, randomkey, 60*60*60*60L);
+        ResponseCookie responseCookie = generateRefreshTokenCookie(token);
+        response.addHeader(HttpHeaders.SET_COOKIE,responseCookie.toString());
+//        response.sendRedirect("http://localhost:3000");
 
+    }
 
-        response.addHeader("Authorization", "Bearer " + token);
+    private ResponseCookie generateRefreshTokenCookie(String token) {
+        return ResponseCookie.from("Authorization",token)
+                .path("/")
+                .httpOnly(true)
+                .secure(true)
+                .sameSite(Cookie.SameSite.NONE.attributeValue())
+                .build();
     }
 
     @Override

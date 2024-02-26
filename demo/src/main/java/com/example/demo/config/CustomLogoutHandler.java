@@ -21,7 +21,7 @@ public class CustomLogoutHandler implements LogoutHandler {
             String username = authentication.getName();
             System.out.println(username);
             refreshTokenService.deleteRefreshToken(username);
-            System.out.println("deleteRefreshToken Finish");
+
         }
         System.out.println("XXX logoutHandler XXX");
     }

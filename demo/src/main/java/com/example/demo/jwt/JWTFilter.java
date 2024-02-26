@@ -1,12 +1,15 @@
 package com.example.demo.jwt;
 
+import com.example.demo.dto.CustomOAuth2User;
 import com.example.demo.dto.CustomUserDetails;
+import com.example.demo.dto.UserDTO;
 import com.example.demo.entity.RefreshToken;
 import com.example.demo.entity.UserEntity;
 import com.example.demo.service.RefreshTokenService;
 import com.example.demo.util.SecureRandomStringGenerator;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -32,12 +35,26 @@ public class JWTFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
 
-        //request에서 Authorization 헤더를 찾음
-        String authorization = request.getHeader("Authorization");
+//        if ("/join".equals(request.getRequestURI()) || "/login".equals(request.getRequestURI())) {
+//            filterChain.doFilter(request, response);
+//            return;
+//        }
 
+        //request에서 Authorization 쿠키를 찾음
+        String authorization = null;
+        Cookie[] cookies = request.getCookies();
+
+        for(Cookie cookie : cookies) {
+            if(cookie.getName().equals("Authorization")) {
+
+                authorization = cookie.getValue();
+            }
+        }
+
+        System.out.println("Cookie Authorization : " + authorization);
 
         //Authorization 헤더 검증
-        if (authorization == null || !authorization.startsWith("Bearer ")) {
+        if (authorization == null) {
 
             System.out.println("token null");
             filterChain.doFilter(request, response); //doFilter로 다음 필터로 넘겨줌
@@ -47,10 +64,11 @@ public class JWTFilter extends OncePerRequestFilter {
         }
 
         //token 추출
-        String token = authorization.split(" ")[1];
+        String token = authorization;
 
         //토큰에서 username과 role 획득
         String username = jwtUtil.getUsername(token);
+        System.out.println("username : " + username);
 
         //토큰 소멸 시간 검증
         if (jwtUtil.isExpired(token)) { //true : 토큰 만료
@@ -122,6 +140,7 @@ public class JWTFilter extends OncePerRequestFilter {
         }
 
         String role = jwtUtil.getRole(token);
+        System.out.println("userrole : "+ role);
 
         //userEntity를 생성하여 값 set
         UserEntity userEntity = new UserEntity();
@@ -134,6 +153,17 @@ public class JWTFilter extends OncePerRequestFilter {
 
         //스프링 시큐리티 인증 토큰 생성
         Authentication authToken = new UsernamePasswordAuthenticationToken(customUserDetails, null, customUserDetails.getAuthorities());
+
+//        //userDTO를 생성하여 값 set
+//        UserDTO userDTO = new UserDTO();
+//        userDTO.setUsername(username);
+//        userDTO.setRole(role);
+//
+//        //UserDetails에 회원 정보 객체 담기
+//        CustomOAuth2User customOAuth2User = new CustomOAuth2User(userDTO);
+//
+//        //스프링 시큐리티 인증 토큰 생성
+//        Authentication authToken = new UsernamePasswordAuthenticationToken(customOAuth2User, null, customOAuth2User.getAuthorities());
 
         //세션에 사용자 등록
         SecurityContextHolder.getContext().setAuthentication(authToken);

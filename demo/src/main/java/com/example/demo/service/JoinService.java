@@ -1,6 +1,6 @@
 package com.example.demo.service;
 
-import com.example.demo.dto.JoinDTO;
+import com.example.demo.dto.UserDTO;
 import com.example.demo.entity.UserEntity;
 import com.example.demo.repository.UserRepository;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -17,12 +17,12 @@ public class JoinService {
         this.bCryptPasswordEncoder = bCryptPasswordEncoder;
     }
 
-    public void joinProcess(JoinDTO joinDTO) {
+    public void joinProcess(UserDTO userDTO) {
 
-        String usernanme = joinDTO.getUsername();
-        String password = joinDTO.getPassword();
+        String username = userDTO.getUsername();
+        String password = userDTO.getPassword();
 
-        Boolean isExist = userRepository.existsByUsername(usernanme);
+        Boolean isExist = userRepository.existsByUsername(username);
 
         if(isExist) {
             System.out.println("이미 존재 하는 유저입니다.");
@@ -31,9 +31,9 @@ public class JoinService {
 
         UserEntity data = new UserEntity();
 
-        data.setUsername(usernanme);
+        data.setUsername(username);
         data.setPassword(bCryptPasswordEncoder.encode(password));
-        data.setRole("ROLE_NORMAL");
+        data.setRole("ROLE_ADMIN");
 
         userRepository.save(data);
     }

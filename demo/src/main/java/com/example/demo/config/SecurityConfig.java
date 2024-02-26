@@ -4,6 +4,8 @@ import com.example.demo.entity.RefreshToken;
 import com.example.demo.jwt.JWTFilter;
 import com.example.demo.jwt.JWTUtil;
 import com.example.demo.jwt.LoginFilter;
+import com.example.demo.oauth2.CustomSuccessHandler;
+import com.example.demo.service.CustomOAuth2UserService;
 import com.example.demo.service.RefreshTokenService;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.context.annotation.Bean;
@@ -31,13 +33,20 @@ public class SecurityConfig {
 
     private final RefreshTokenService refreshTokenService;
 
-    public SecurityConfig(AuthenticationConfiguration authenticationConfiguration, JWTUtil jwtUtil, RefreshTokenService refreshTokenService) {
+    private final CustomOAuth2UserService customOAuth2UserService;
+
+    private final CustomSuccessHandler customSuccessHandler;
+
+    public SecurityConfig(AuthenticationConfiguration authenticationConfiguration, JWTUtil jwtUtil,
+                          RefreshTokenService refreshTokenService, CustomOAuth2UserService customOAuth2UserService,
+                          CustomSuccessHandler customSuccessHandler) {
 
         this.authenticationConfiguration = authenticationConfiguration;
         this.jwtUtil = jwtUtil;
         this.refreshTokenService = refreshTokenService;
+        this.customOAuth2UserService = customOAuth2UserService;
+        this.customSuccessHandler = customSuccessHandler;
     }
-
 
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration configuration) throws Exception {
@@ -60,6 +69,7 @@ public class SecurityConfig {
                         .configurationSource(new CorsConfigurationSource() {
                             @Override
                             public CorsConfiguration getCorsConfiguration(HttpServletRequest request) {
+
                                 CorsConfiguration configuration = new CorsConfiguration();
 
                                 configuration.setAllowedOrigins(Collections.singletonList("http://localhost:3000"));
@@ -68,6 +78,7 @@ public class SecurityConfig {
                                 configuration.setAllowedHeaders(Collections.singletonList("*"));
                                 configuration.setMaxAge(3600L);
 
+                                configuration.setExposedHeaders(Collections.singletonList("Set-Cookie"));
                                 configuration.setExposedHeaders(Collections.singletonList("Authorization"));
                                 return configuration;
                             }
@@ -88,7 +99,7 @@ public class SecurityConfig {
         //경로별 인가 작업
         http
                 .authorizeHttpRequests((auth) -> auth
-                        .requestMatchers("/login", "/", "/join").permitAll() // 모두 인가
+                        .requestMatchers("/", "/join","/login").permitAll() // 모두 인가
                         .requestMatchers("/admin").hasRole("ADMIN") // admin 인가
                         .anyRequest().authenticated()); // 로그인한 사용자만 가능
 
@@ -96,7 +107,7 @@ public class SecurityConfig {
         //필터 위치 설정 : 세션이 stateless 상태이기 때문에 한 개의 인증 요청이 완료 되면 securityContext 값은 초기화 된다.
         //따라서 로그아웃 시에도 클라이언트가 가지고있는 JWT를 검증하고, 통과 된다면 securityContext에 값을 다시 저장한 후 인증 로직 실행
         http
-                .addFilterBefore(new JWTFilter(jwtUtil,refreshTokenService), LogoutFilter.class);
+                .addFilterAfter(new JWTFilter(jwtUtil,refreshTokenService), LoginFilter.class);
 
         //로그아웃 설정
         http
@@ -105,10 +116,16 @@ public class SecurityConfig {
                         .addLogoutHandler(new CustomLogoutHandler(refreshTokenService))
                         .deleteCookies("JSESSIONID"));
 
+        //oauth2
+        http
+                .oauth2Login((oauth2) -> oauth2
+//                        .clientRegistrationRepository(customClientRegistrationRepo.clientRegistrationRepository())
+                        .userInfoEndpoint((userInfoEndpointConfig) -> userInfoEndpointConfig
+                                .userService(customOAuth2UserService))
+                        .successHandler(customSuccessHandler));
 
         http
                 .addFilterAt(new LoginFilter(authenticationManager(authenticationConfiguration), jwtUtil, refreshTokenService), UsernamePasswordAuthenticationFilter.class);
-
 
         //세션 설정
         //JWT를 통한 인증/인가를 위해선 세션을 STATELESS로 설정하는것이 중요함

@@ -1,6 +1,6 @@
 package com.example.demo.controller;
 
-import com.example.demo.dto.JoinDTO;
+import com.example.demo.dto.UserDTO;
 import com.example.demo.service.JoinService;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -18,9 +18,9 @@ public class JoinController {
     }
 
     @PostMapping("join")
-    public String joinProcess(JoinDTO joinDTO) {
+    public String joinProcess(UserDTO userDTO) {
 
-        joinService.joinProcess(joinDTO);
+        joinService.joinProcess(userDTO);
 
         return "ok";
     }

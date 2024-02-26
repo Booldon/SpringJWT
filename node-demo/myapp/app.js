@@ -27,19 +27,23 @@ document
     fetch("http://localhost:8080/login", {
       method: "POST", // HTTP 메소드 지정
       body: formData,
+      credentials: "include",
     })
       .then((response) => {
         if (!response.ok) {
           throw new Error("Network response was not ok");
         }
-        const authorizationHeader = response.headers.get("Authorization");
-        if (authorizationHeader) {
+        const authorizationCookie = document.cookie
+          .split("; ")
+          .find((row) => row.startsWith("Authorization="));
+        if (authorizationCookie) {
+          const authorizationHeader = authorizationCookie.split("=")[1];
           alert("로그인 성공!!");
           const token = authorizationHeader.split(" ")[1];
           saveTokenToLocalStorage(token);
           console.log("토큰을 로컬 스토리지에 저장했습니다:", token);
         } else {
-          throw new Error("응답에 Authorization 헤더가 없습니다.");
+          throw new Error("응답에 Authorization 쿠키가 없습니다.");
         }
         return response.text();
       })
@@ -47,17 +51,9 @@ document
   });
 
 function getAdmin() {
-  const token = getTokenFromLocalStorage();
-  if (!token) {
-    alert("토큰이 없습니다.");
-    return;
-  }
-
   fetch("http://localhost:8080/admin", {
     method: "GET",
-    headers: {
-      Authorization: `Bearer ${token}`, //토큰 삽입
-    },
+    credentials: "include",
   })
     .then((response) => {
       if (!response.ok) {
@@ -107,4 +103,12 @@ function logout() {
     .catch((error) => {
       console.error("접근 오류", error);
     });
+}
+
+function naverLogin() {
+  window.location.href = "http://localhost:8080/oauth2/authorization/naver";
+}
+
+function googleLogin() {
+  window.location.href = "http://localhost:8080/oauth2/authorization/google";
 }
