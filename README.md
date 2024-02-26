@@ -28,3 +28,9 @@ cd node-demo/myapp
 
 
 node server.js
+
+
+
+------------ 24/02/26 -------------
+OAUTH 로그인 추가
+JWT 발급 경로 httpHeader -> Cookie로 변경
